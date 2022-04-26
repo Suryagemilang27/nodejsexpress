@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Suryagemilang27/nodejsexpress.git"
+    "url": "git+https://github.com/adamsenzoe/NodeJSExpress.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Suryagemilang27/nodejsexpress/issues"
+    "url": "https://github.com/adamsenzoe/NodeJSExpress/issues"
   },
-  "homepage": "https://github.com/Suryagemilang27/nodejsexpress#readme",
+  "homepage": "https://github.com/adamsenzoe/NodeJSExpress#readme",
   "dependencies": {
     "body-parser": "^1.19.2",
     "express": "^4.17.3",

@@ -1,53 +1,43 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const koneksi = require('./config/database');
+const connection = require('./config/database');
 const multer = require('multer');
 const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 // set body parser
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 // buat server nya
-app.listen(PORT, () => console.log(`Server running at port: ${PORT}`));
+app.use(express.static("./public"))
+
+ //! Use of Multerno
+ var storage = multer.diskStorage({
+    destination: (req, file, callBack) => {
+        callBack(null, './public/images/')     // './public/images/' directory name where save the file
+    },
+    filename: (req, file, callBack) => {
+        callBack(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
+    }
+})
+ 
+var upload = multer({
+    storage: storage
+});
+
 
 // create data / insert data
-app.post('/api/movies', upload.single('image'),(req, res) => {
-
-    if (!req.file) {
-        console.log("No file upload");
-    } else {
-        console.log(req.file.filename)
-        var imgsrc = 'http://localhost:5000/images/' + req.file.filename
-        // buat variabel penampung data dan query sql
-            const data = { ...req.body };
-            const querySql = 'INSERT INTO movies (judul,rating,deskripsi,foto) values (?,?,?,?);';
-            const judul = req.body.judul;
-            const rating = req.body.rating;
-            const deskripsi = req.body.deskripsi;
-            const foto =   imgsrc;
-            console.log (querySql);
-            console.log (judul);
-            console.log (rating);
-            console.log (deskripsi);
-            console.log (foto);
-            // jalankan query
-            koneksi.query(querySql,[ judul,rating,deskripsi,foto], (err, rows, field) => {
-                // error handling
-                if (err) {
-                    return res.status(500).json({ message: 'Gagal insert data!', error: err });
-                }
-
-                // jika request berhasil
-                res.status(201).json({ success: true, message: 'Berhasil insert data!' });
-            });
-       /* var insertData = "INSERT INTO users_file(file_src)VALUES(?)"
-        db.query(insertData, [imgsrc], (err, result) => {
-            if (err) throw err
-            console.log("file uploaded")
-        })*/
-    }
-    
+app.post('/api/movies', upload.single('image'), (req, res) => {
+    const { judul, rating, deskripsi, foto, rilis, durasi, sutradara, pemain } = req.body;
+    const sql = `INSERT INTO movies (judul, rating, deskripsi, foto, rilis, durasi, sutradara, pemain) VALUES ('${judul}', '${rating}', '${deskripsi}', '${foto}', '${rilis}', '${durasi}', '${sutradara}', '${pemain}')`;
+    console.log(req.body)
+    connection.query(sql, (err, result) => {
+        if (err) throw err;
+        res.send({
+            message: 'New movie has been created',
+            data: result
+        });
+    });
 });
 
 // read data / get data
@@ -56,7 +46,7 @@ app.get('/api/movies', (req, res) => {
     const querySql = 'SELECT * FROM movies';
 
     // jalankan query
-    koneksi.query(querySql, (err, rows, field) => {
+    connection.query(querySql, (err, rows, field) => {
         // error handling
         if (err) {
             return res.status(500).json({ message: 'Ada kesalahan', error: err });
@@ -67,6 +57,7 @@ app.get('/api/movies', (req, res) => {
     });
 });
 
+
 // update data
 app.put('/api/movies/:id', (req, res) => {
     // buat variabel penampung data dan query sql
@@ -75,7 +66,7 @@ app.put('/api/movies/:id', (req, res) => {
     const queryUpdate = 'UPDATE movies SET ? WHERE id = ?';
 
     // jalankan query untuk melakukan pencarian data
-    koneksi.query(querySearch, req.params.id, (err, rows, field) => {
+    connection.query(querySearch, req.params.id, (err, rows, field) => {
         // error handling
         if (err) {
             return res.status(500).json({ message: 'Ada kesalahan', error: err });
@@ -84,7 +75,7 @@ app.put('/api/movies/:id', (req, res) => {
         // jika id yang dimasukkan sesuai dengan data yang ada di db
         if (rows.length) {
             // jalankan query update
-            koneksi.query(queryUpdate, [data, req.params.id], (err, rows, field) => {
+            connection.query(queryUpdate, [data, req.params.id], (err, rows, field) => {
                 // error handling
                 if (err) {
                     return res.status(500).json({ message: 'Ada kesalahan', error: err });
@@ -99,14 +90,14 @@ app.put('/api/movies/:id', (req, res) => {
     });
 });
 
-// delete data
+    // delete data
 app.delete('/api/movies/:id', (req, res) => {
     // buat query sql untuk mencari data dan hapus
     const querySearch = 'SELECT * FROM movies WHERE id = ?';
     const queryDelete = 'DELETE FROM movies WHERE id = ?';
 
     // jalankan query untuk melakukan pencarian data
-    koneksi.query(querySearch, req.params.id, (err, rows, field) => {
+    connection.query(querySearch, req.params.id, (err, rows, field) => {
         // error handling
         if (err) {
             return res.status(500).json({ message: 'Ada kesalahan', error: err });
@@ -115,7 +106,7 @@ app.delete('/api/movies/:id', (req, res) => {
         // jika id yang dimasukkan sesuai dengan data yang ada di db
         if (rows.length) {
             // jalankan query delete
-            koneksi.query(queryDelete, req.params.id, (err, rows, field) => {
+            connection.query(queryDelete, req.params.id, (err, rows, field) => {
                 // error handling
                 if (err) {
                     return res.status(500).json({ message: 'Ada kesalahan', error: err });
@@ -129,23 +120,11 @@ app.delete('/api/movies/:id', (req, res) => {
         }
     });
 });
-// set body parser
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-// buat server nya
-//use express static folder
-app.use(express.static("./public"))
- //! Use of Multer
-var storage = multer.diskStorage({
-    destination: (req, file, callBack) => {
-        callBack(null, './public/images/')     // './public/images/' directory name where save the file
-    },
-    filename: (req, file, callBack) => {
-        callBack(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
-    }
-})
- 
-var upload = multer({
-    storage: storage
-});
- 
+
+//app.post('/api/moviesImages', upload.single('image'),(req, res) => {
+
+
+
+
+
+app.listen(PORT, () => console.log(`Server running at port: ${PORT}`));
